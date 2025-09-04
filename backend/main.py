@@ -5,8 +5,28 @@ from llm_runner import run_agent_with_groq
 from debate import conduct_debate
 from news_fetcher import get_google_news_rss
 from colorama import Fore, Style, init
+from starlette.concurrency import run_in_threadpool
 init(autoreset=True)
 import os
+
+# Expose FastAPI app for uvicorn
+app = FastAPI(title="FinSight Backend")
+
+
+@app.get("/", tags=["health"])
+def health():
+    return {"status": "ok", "message": "FinSight backend running"}
+
+
+@app.get("/analyze/{ticker}", tags=["analysis"])
+async def analyze(ticker: str):
+    """Run the existing run_all_agents workflow for a ticker and return results."""
+    ticker = ticker.strip().upper()
+    # run_all_agents is synchronous and may perform blocking IO; run it in a threadpool
+    result = await run_in_threadpool(run_all_agents, ticker)
+    if result is None:
+        return {"error": "Analysis failed or data error"}
+    return result
 
 AGENTS = {
     "HedgeFundGPT": hedge_fund_prompt,

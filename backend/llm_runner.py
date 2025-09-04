@@ -1,12 +1,22 @@
 import os
+from dotenv import load_dotenv
 from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 from validation import process_response
 
-# Update to use Groq API key
-API_KEY = os.getenv("API_KEY")
+# Load environment variables from .env (if present)
+load_dotenv()
 
-# Initialize Groq client
+# Support either API_KEY or OPENAI_API_KEY for compatibility
+API_KEY = os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
+
+# Fail fast with a clear message if the key is missing
+if not API_KEY:
+    raise RuntimeError(
+        "OpenAI/Groq API key not found. Set `API_KEY` in backend/.env or set the environment variable `OPENAI_API_KEY`."
+    )
+
+# Initialize Groq/OpenAI client
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
     api_key=API_KEY
